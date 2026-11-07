@@ -1,0 +1,30 @@
+output: ../outputs/smoke
+device: cpu
+workers: 0
+cpu_threads: 2
+data:
+  hash_images: true
+  sources:
+    - adapter: table
+      table: ../examples/generated/records.csv
+      root: ../examples/generated
+      columns: {path: image_file, label: target, id: sample_key}
+split: {internal_cohort: internal, mode: image, fractions: [0.6, 0.15, 0.15, 0.1], seeds: [7, 11], overlap_policy: error}
+preprocessing: {resize: 32, crop: 32, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], batch_size: 8}
+cache: {dtype: float16}
+training: {seed: 23, lr: 0.001, weight_decay: 0.0001, batch_size: 8, max_epochs: 2, min_epochs: 1, patience: 1, min_delta: 0.0001, gradient_clip: 5, amp: false, feature_storage: device, log_every: 2}
+fusion: {layers: [1, 2, 4], heads: 4, dropout: 0.1, aux_losses: {gate_mean: 0.02, negative_weight_entropy: 0.01, branch_alignment: 0.02}}
+models:
+  toy_b: {provider: toy, seed: 3, kwargs: {dim: 16, depth: 4, patch: 8}}
+  toy_s: {provider: toy, seed: 5, kwargs: {dim: 8, depth: 4, patch: 8}}
+experiments: {backbones: [toy_b, toy_s], layer_encoders: [toy_b, toy_s], pad_to: {toy_s: 16}}
+fewshot:
+  budgets: [1, 2]
+  seeds: [31, 37]
+  models: [{alias: linear, encoder: toy_b, kind: pooled}, {alias: fusion, encoder: toy_b, kind: tokens}]
+calibration: {target_coverage: 0.8}
+evaluation: {primary_head: fusion_toy_b, bootstrap_replicates: 100}
+robustness:
+  conditions: {blur: [1], brightness: [0.7], saturation: [0.35], rotation: [90]}
+explain: {regions: 3, max_regions: 6, max_cases: 1, batch_size: 8, retain_fraction: 0.9, remove_fraction: 0.5, blur_radius: 3, full_region_layer_decomposition: true}
+plot: {width_mm: 190, dpi: 120, font: DejaVu Sans, font_size: 7, colors: ['#328985', '#8395A3', '#B14E63', '#4777A8']}

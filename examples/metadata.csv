@@ -1,0 +1,3 @@
+filename,diagnosis,image_id
+any/subfolder/my_image_001.png,class_a,example_001
+another_location/scan_002.jpg,class_b,example_002

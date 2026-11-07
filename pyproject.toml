@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "otoscopy-layerfusion"
+version = "0.1.0"
+description = "Configurable frozen-backbone classification, LayerFusion, label efficiency and diagnostic evaluation"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+readme = "README.md"
+dependencies = ["torch>=2.4", "torchvision>=0.19", "numpy>=1.26", "pandas>=2.1", "scipy>=1.11", "scikit-learn>=1.4", "Pillow>=10", "PyYAML>=6", "matplotlib>=3.8", "openpyxl>=3.1", "timm>=1.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "build>=1", "black>=24"]
+
+[project.scripts]
+otoscopy-ai = "otoscopy_ai.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

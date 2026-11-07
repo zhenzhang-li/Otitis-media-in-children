@@ -1,0 +1,114 @@
+# All paths are relative to this YAML, or may be absolute/environment-variable paths.
+output: ../outputs/study
+device: auto
+workers: 0
+cpu_threads: 4
+data:
+  hash_images: true
+  # Optional classes fixes the class order. Otherwise it is inferred from your labels.
+  # classes: [AOM, IC, NE, OME]
+  label_map: {}  # e.g. {SOM: OME}; no alias is hard-coded in the package.
+  sources:
+    - adapter: table
+      table: ../data/internal.csv
+      root: ../data
+      columns: {path: filename, label: diagnosis, id: image_id}
+      cohort: internal
+    # Add any number of external tables with independent column mappings:
+    # - adapter: table
+    #   table: ../data/another_hospital.xlsx
+    #   root: ../data/external_images
+    #   columns: {path: image_file, label: reference_class, id: case_id, group: patient_id}
+    #   cohort: hospital_b
+split:
+  internal_cohort: internal
+  mode: image  # image: exact counts; group: approximate ratios; predefined: use role column
+  fractions: [0.60, 0.15, 0.15, 0.10]
+  seeds: [20261104, 42, 123, 2026, 3407]
+  overlap_policy: error  # report retains overlaps explicitly, matching a raw-directory sensitivity analysis
+preprocessing:
+  resize: 256
+  crop: 224
+  mean: [0.485, 0.456, 0.406]
+  std: [0.229, 0.224, 0.225]
+  batch_size: 48
+cache:
+  dtype: float16
+training:
+  seed: 20261104
+  lr: 0.0001
+  weight_decay: 0.0001
+  batch_size: 64
+  max_epochs: 200
+  min_epochs: 30
+  patience: 30
+  min_delta: 0.0001
+  gradient_clip: 5
+  amp: true
+  fused_optimizer: true
+  feature_storage: device  # stream limits GPU memory use at the cost of repeated transfers
+  log_every: 20
+fusion:
+  layers: [4, 8, 12]  # one-based public convention
+  heads: 8
+  dropout: 0.1
+  aux_losses: {gate_mean: 0.02, negative_weight_entropy: 0.01, branch_alignment: 0.02}
+models:
+  resnet50: {provider: torchvision, name: resnet50, weights: ../weights/resnet50-0676ba61.pth}
+  swin_b: {provider: torchvision, name: swin_b, weights: ../weights/swin_b-68c6b09e.pth}
+  vit_s16: {provider: timm, name: vit_small_patch16_224.augreg_in21k_ft_in1k, weights: ../weights/vit_small_patch16_224.augreg_in21k_ft_in1k.pth}
+  vit_b16: {provider: torchvision, name: vit_b_16, weights: ../weights/vit_b_16-c867db91.pth}
+  convnext_tiny: {provider: torchvision, name: convnext_tiny, weights: ../weights/convnext_tiny-983f1562.pth}
+  convnext_base: {provider: torchvision, name: convnext_base, weights: ../weights/convnext_base-6075fbad.pth}
+  dinov3_vits16: {provider: dinov3, name: dinov3_vits16, repository: ../third_party/dinov3, weights: ../weights/dinov3_vits16_pretrain_lvd1689m-08c60483.pth}
+  dinov3_vitb16: {provider: dinov3, name: dinov3_vitb16, repository: ../third_party/dinov3, weights: ../weights/dinov3_vitb16_pretrain_lvd1689m-73cec8be.pth}
+  dinov3_convnext_tiny: {provider: dinov3, name: dinov3_convnext_tiny, repository: ../third_party/dinov3, weights: ../weights/dinov3_convnext_tiny_pretrain_lvd1689m-21b726bb.pth}
+  dinov3_convnext_base: {provider: dinov3, name: dinov3_convnext_base, repository: ../third_party/dinov3, weights: ../weights/dinov3_convnext_base_pretrain_lvd1689m-801f2ba9.pth}
+experiments:
+  backbones: [resnet50, swin_b, vit_s16, vit_b16, convnext_tiny, convnext_base, dinov3_vits16, dinov3_vitb16, dinov3_convnext_tiny, dinov3_convnext_base]
+  layer_encoders: [dinov3_vitb16, dinov3_vits16]
+  pad_to: {dinov3_vits16: 768}
+fewshot:
+  budgets: [1, 5, 10, 15, 20, 25]
+  seeds: [20261111, 20261112, 20261113, 20261114, 20261115]
+  models:
+    - {alias: ViT_S, encoder: vit_s16, kind: pooled}
+    - {alias: ViT_B, encoder: vit_b16, kind: pooled}
+    - {alias: DINO_S, encoder: dinov3_vits16, kind: pooled}
+    - {alias: DINO_B, encoder: dinov3_vitb16, kind: pooled}
+    - {alias: CLF, encoder: dinov3_vitb16, kind: tokens}
+calibration:
+  log_temperature_bounds: [-2.3, 3.0]
+  target_coverage: 0.8
+evaluation:
+  primary_head: fusion_dinov3_vitb16
+  bootstrap_replicates: 20000
+  # clinical_pair: [AOM, OME]  # optional named direction; labels must match your own classes
+robustness:
+  conditions:
+    blur: [1, 2, 4, 6]
+    brightness: [0.40, 0.70, 1.25, 1.60]
+    saturation: [0.35, 0.75, 1.50, 2.00]
+    rotation: [45, 90, 180, 270]
+explain:
+  regions: 6
+  max_regions: 8
+  max_cases: 6
+  batch_size: 16
+  retain_fraction: 0.9
+  remove_fraction: 0.5
+  blur_radius: 9
+  full_region_layer_decomposition: false  # exact region×layer decomposition is more expensive
+plot:
+  width_mm: 190
+  dpi: 600
+  font: Arial
+  font_size: 8
+  line_width: 1.2
+  axis_width: 0.7
+  marker_size: 4
+  cap_size: 2
+  legend_size: 6
+  training_height_mm: 75
+  learning_height_mm: 95
+  colors: ['#328985', '#8395A3', '#B14E63', '#4777A8', '#AB8440']

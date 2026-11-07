@@ -1,0 +1,5 @@
+# Optional convenience search; the manuscript experiments use fixed study.yaml settings.
+grid:
+  training.lr: [0.0001, 0.0003]
+  training.weight_decay: [0.0001]
+  fusion.dropout: [0.1, 0.2]

@@ -1,0 +1,13 @@
+# Complete verified author/repository/DOI information, then rename to CITATION.cff.
+cff-version: 1.2.0
+message: "Please cite the associated manuscript and this fixed code release. Complete metadata before publication."
+type: software
+title: "Otoscopy LayerFusion research code"
+version: 0.1.0
+date-released: 2026-11-05
+license: MIT
+authors:
+  - family-names: "REPLACE_WITH_VERIFIED_FAMILY_NAME"
+    given-names: "REPLACE_WITH_VERIFIED_GIVEN_NAMES"
+repository-code: "https://github.com/OWNER/REPOSITORY"
+# doi: "ADD_A_REAL_ARCHIVAL_RELEASE_DOI_IF_AVAILABLE"
